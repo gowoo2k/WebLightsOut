@@ -1,16 +1,21 @@
 [
   {
     "file": "index.html",
-    "bytes": 22325,
-    "sha256": "758495ac486d4da520777a2666fc76d89be768f69ca86b5044c6029f38689fea"
+    "bytes": 22363,
+    "sha256": "0ea7772c3fa82b1eecb63c30d13d29b58fa62ad07a6a757c1a87a0fa1e57c594"
   },
   {
     "file": "README.txt",
-    "bytes": 2031,
-    "sha256": "73bc04f0ff4310309d4e4d8120776ae686d6c063fd32ea9c6a91a9104fa90aa3"
+    "bytes": 2101,
+    "sha256": "4e649eea2733b31b3475e8663f678cbacce28395058a4c47990990fe5b6c0299"
   },
   {
     "file": "game-smooth.js",
+    "bytes": 238541,
+    "sha256": "505592822db2eb369a6f0a11009a8c939109e9f51838f0a831c6d18326acc514"
+  },
+  {
+    "file": "game.js",
     "bytes": 238541,
     "sha256": "505592822db2eb369a6f0a11009a8c939109e9f51838f0a831c6d18326acc514"
   },

@@ -70,7 +70,7 @@ async function start(select){if(started)return;started=true;stageMode=select;Mod
    return {};
   };
  }
- const script=document.createElement('script');script.src='game-smooth.js?v='+GAME_VERSION;script.onerror=()=>{statusEl.textContent='game-smooth.js could not load. Use the local web server.';};document.body.appendChild(script);
+ const script=document.createElement('script');script.src=GAME_STEM+'.js?v='+GAME_VERSION;script.onerror=()=>{statusEl.textContent='Could not load '+script.src+'. Upload the complete contents of NightPort-Web.zip, then refresh.';};document.body.appendChild(script);
  }catch(error){started=false;document.getElementById('gate').hidden=false;statusEl.textContent='Game download failed: '+error.message;}
 }
 document.getElementById('start').onclick=()=>start(false);document.getElementById('select').onclick=()=>start(true);
