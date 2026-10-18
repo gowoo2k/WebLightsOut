@@ -28,6 +28,8 @@ body.landscape-mode #play-area .fullscreen-exit{display:none}body.landscape-mode
 const canvas=document.getElementById('canvas'),statusEl=document.getElementById('status'),audioStatus=document.getElementById('audio-status');
 const params=new URLSearchParams(location.search);
 const MUSIC_VERSION='92d3615d214a';
+const GAME_VERSION='843515053159';
+const GAME_STEM='game-smooth';
 let stageMode=params.get('mode')==='select',started=false;
 globalThis.NightMusic={track:0,audio:new Audio(),blocked:false,
  play(track){this.stop();this.track=track;this.audio.loop=true;this.audio.preload='auto';this.audio.src='assets/music/track'+String(track).padStart(2,'0')+'.ogg?v='+MUSIC_VERSION;this.attempt();},
@@ -36,17 +38,40 @@ globalThis.NightMusic={track:0,audio:new Audio(),blocked:false,
  unlock(){const ctx=globalThis.Module&&Module.SDL2&&Module.SDL2.audioContext;if(ctx&&ctx.state==='suspended')ctx.resume();if(this.blocked)this.attempt();}
 };
 NightMusic.audio.addEventListener('error',()=>{if(NightMusic.track)audioStatus.textContent='Music could not load. Gameplay can continue.';});
-var Module={canvas,arguments:[],print:msg=>console.log(msg),printErr:msg=>console.error(msg),
+var Module={canvas,arguments:[],locateFile:(path,prefix)=>prefix+path+'?v='+GAME_VERSION,print:msg=>console.log(msg),printErr:msg=>console.error(msg),
  setStatus(text){statusEl.textContent=text;const m=/\((\d+)\/(\d+)\)/.exec(text);if(m)document.getElementById('progress').value=Number(m[1])/Number(m[2]);},
  onRuntimeInitialized(){controllerReady(true);statusEl.textContent='Running';document.getElementById('progress').value=1;canvas.focus({preventScroll:true});},
  onAbort(reason){statusEl.textContent='Game failed to start: '+reason;},
  onExit(code){controllerReady(false);Module.exitCode=code;statusEl.textContent=code===0?'Game ended. Press Restart to play again.':'Game ended with an error ('+code+').';NightMusic.stop();}
 };
-function start(select){if(started)return;started=true;stageMode=select;Module.arguments=select?['--stage-select']:[];
+async function loadCompressedGameFile(name,label){
+ const response=await fetch(name+'.gz?v='+GAME_VERSION);
+ if(!response.ok)throw new Error(label+' download failed ('+response.status+')');
+ const total=Number(response.headers.get('Content-Length'))||0;let received=0;
+ const tracked=response.body.pipeThrough(new TransformStream({transform(chunk,controller){received+=chunk.byteLength;Module.setStatus('Downloading '+label+'... ('+received+'/'+(total||received)+')');controller.enqueue(chunk);}}));
+ const bytes=await new Response(tracked).arrayBuffer();
+ const magic=new Uint8Array(bytes,0,Math.min(2,bytes.byteLength));
+ // Some hosts set Content-Encoding even on .gz URLs; fetch then already decoded it.
+ if(magic[0]!==0x1f||magic[1]!==0x8b)return bytes;
+ statusEl.textContent='Preparing '+label+'...';
+ return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
+async function start(select){if(started)return;started=true;stageMode=select;Module.arguments=select?['--stage-select']:[];
  // Verification mode runs the same compiled smoke paths and exits.
  const smoke=params.get('check');if(smoke&&/^smoke-[a-z0-9-]+$/.test(smoke))Module.arguments=['--'+smoke];
  document.getElementById('gate').hidden=true;statusEl.textContent='Loading game data...';
- const script=document.createElement('script');script.src='game.js';script.onerror=()=>{statusEl.textContent='game.js could not load. Use the local web server.';};document.body.appendChild(script);
+ try {
+ if(typeof DecompressionStream!=='function')throw new Error('Please update your browser to load this compressed game.');
+ if(typeof DecompressionStream==='function'){
+  let [packageData,wasmData]=await Promise.all([loadCompressedGameFile(GAME_STEM+'.data','game data'),loadCompressedGameFile(GAME_STEM+'.wasm','game engine')]);
+  Module.getPreloadedPackage=()=>{const data=packageData;packageData=null;return data;};
+  Module.instantiateWasm=(imports,receive)=>{
+   WebAssembly.instantiate(wasmData,imports).then(result=>{wasmData=null;receive(result.instance,result.module);}).catch(error=>Module.onAbort(error.message));
+   return {};
+  };
+ }
+ const script=document.createElement('script');script.src='game-smooth.js?v='+GAME_VERSION;script.onerror=()=>{statusEl.textContent='game-smooth.js could not load. Use the local web server.';};document.body.appendChild(script);
+ }catch(error){started=false;document.getElementById('gate').hidden=false;statusEl.textContent='Game download failed: '+error.message;}
 }
 document.getElementById('start').onclick=()=>start(false);document.getElementById('select').onclick=()=>start(true);
 document.getElementById('sound').onclick=()=>{NightMusic.unlock();canvas.focus({preventScroll:true});};
@@ -66,8 +91,8 @@ async function enterLandscape(){if(landscapeMode)return;const token=++landscapeT
 document.getElementById('landscape').onclick=enterLandscape;document.getElementById('exit-landscape').onclick=leaveLandscape;
 addEventListener('resize',updateLandscape);addEventListener('orientationchange',updateLandscape);
 document.addEventListener('fullscreenchange',()=>{if(landscapeMode&&landscapeOwnFullscreen&&!document.fullscreenElement)leaveLandscape();});
-for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(['F4','F5','F6'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();}},{capture:true});
-addEventListener('keydown',event=>{NightMusic.unlock();if(started&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','F7'].includes(event.key)&&event.target.tagName!=='INPUT')event.preventDefault();});
+for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(['F2','F3','F4','F5','F6','F7','PageUp','PageDown','e','E','m','M','[',']'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();}},{capture:true});
+addEventListener('keydown',event=>{NightMusic.unlock();if(started&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','F1','F7'].includes(event.key)&&event.target.tagName!=='INPUT')event.preventDefault();});
 addEventListener('pointerdown',()=>NightMusic.unlock());
 const codes={ArrowLeft:37,ArrowUp:38,ArrowDown:40,ArrowRight:39,x:88,z:90,f:70,' ':32,Enter:13,Escape:27};
 const pointers=new Map(),owners=new Map();let controllerScrollAnchor=null;
