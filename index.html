@@ -19,11 +19,12 @@ body.landscape-mode #play-area #actions button{height:calc((var(--side) - 8px)/2
 body.landscape-mode #play-area #utility{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;pointer-events:none}
 body.landscape-mode #play-area #utility button{min-width:70px;max-width:var(--side);min-height:42px;pointer-events:auto;font-size:12px}
 body.landscape-mode #play-area .fullscreen-exit{display:none}body.landscape-mode #play-area #exit-landscape{display:block;position:absolute;z-index:5;top:5px;left:50%;transform:translateX(-50%);padding:6px 10px;font-size:11px;background:#182435dd}
+#play-area.has-controls{touch-action:none}#play-area #controller #dpad{pointer-events:none}#stick-base{display:none;z-index:6}#dpad.active #stick-base{display:block}
 </style></head><body><main><header><h1>NIGHT <small>WEB</small></h1><div class="toolbar"><button id="toggle-controls" aria-pressed="false">화면 버튼</button><button id="landscape" class="mobile-landscape">가로 모드</button><button id="sound">소리</button><button id="fullscreen">전체 화면</button><button id="restart">재시작</button></div></header>
 <section id="play-area" aria-label="게임"><button id="exit-landscape">가로 모드 종료</button><button class="fullscreen-exit" id="exit-fullscreen">화면 축소</button><div class="screen" id="screen"><canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas><div id="gate"><strong>NIGHT</strong><small>처음에 약 51MB를 불러옵니다. 음악은 필요한 곡만 받습니다.</small><div class="controls"><button id="start">게임 시작</button><button id="select">스테이지 선택</button></div></div></div>
-<div id="controller" class="disabled" aria-label="가상 컨트롤러"><div id="utility"><button data-key="Enter">확인 <small>Enter</small></button><button data-key="Escape">일시정지 / 뒤로</button></div><div id="dpad" role="group" aria-label="방향 패드: 드래그하여 8방향 이동"><span class="north" data-direction="ArrowUp">&#8593;</span><span class="west" data-direction="ArrowLeft">&#8592;</span><span class="east" data-direction="ArrowRight">&#8594;</span><span class="south" data-direction="ArrowDown">&#8595;</span><div id="knob"></div></div></div><div id="actions"><button id="punch" data-key="z">펀치<small>Z</small></button><button id="kick" data-key="x">킥<small>X</small></button><button data-key="f">점프<small>F</small></button><button data-key=" ">가드<small>Space</small></button></div></div></section>
+<div id="controller" class="disabled" aria-label="가상 컨트롤러"><div id="utility"><button data-key="Enter">확인 <small>Enter</small></button><button data-key="Escape">일시정지 / 뒤로</button></div><div id="dpad" role="group" aria-label="방향 패드: 드래그하여 8방향 이동"><div id="stick-base"><span class="north" data-direction="ArrowUp">&#8593;</span><span class="west" data-direction="ArrowLeft">&#8592;</span><span class="east" data-direction="ArrowRight">&#8594;</span><span class="south" data-direction="ArrowDown">&#8595;</span><div id="knob"></div></div></div><div id="actions"><button id="punch" data-key="z">펀치<small>Z</small></button><button id="kick" data-key="x">킥<small>X</small></button><button data-key="f">점프<small>F</small></button><button data-key=" ">가드<small>Space</small></button></div></div></section>
 <progress id="progress" max="1" value="0"></progress><p id="status" role="status">Ready</p><p id="audio-status" role="status"></p>
-<p class="help"><kbd>방향키</kbd> 이동 &nbsp; <kbd>Z</kbd> 펀치 &nbsp; <kbd>X</kbd> 킥 &nbsp; <kbd>F</kbd> 점프 &nbsp; <kbd>Space</kbd> 가드 &nbsp; <kbd>Enter</kbd> 확인 &nbsp; <kbd>Esc</kbd> 일시정지 / 뒤로<br>화면 버튼은 동시에 누를 수 있습니다. 방향 패드를 대각선으로 끌면 8방향으로 움직입니다.</p><footer>NIGHT WEB</footer>
+<p class="help"><kbd>방향키</kbd> 이동 &nbsp; <kbd>Z</kbd> 펀치 &nbsp; <kbd>X</kbd> 킥 &nbsp; <kbd>F</kbd> 점프 &nbsp; <kbd>Space</kbd> 가드 &nbsp; <kbd>Enter</kbd> 확인 &nbsp; <kbd>Esc</kbd> 일시정지 / 뒤로<br>화면 왼쪽에서 터치하면 그곳에 조이스틱이 나타납니다. 드래그하여 이동하고 손을 떼면 사라집니다. 공격 버튼과 동시에 누를 수 있습니다.</p><footer>NIGHT WEB</footer>
 <script>
 const canvas=document.getElementById('canvas'),statusEl=document.getElementById('status'),audioStatus=document.getElementById('audio-status');
 const params=new URLSearchParams(location.search);
@@ -78,19 +79,17 @@ document.getElementById('sound').onclick=()=>{NightMusic.unlock();canvas.focus({
 document.getElementById('exit-fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();};
 document.getElementById('restart').onclick=()=>{location.href=location.pathname+(stageMode?'?mode=select':'');};
 document.getElementById('fullscreen').onclick=()=>{const area=document.getElementById('play-area');if(document.fullscreenElement)document.exitFullscreen();else if(area.requestFullscreen)area.requestFullscreen().catch(()=>{});canvas.focus({preventScroll:true});};
-let landscapeMode=false,landscapeLocked=false,landscapeOwnFullscreen=false,landscapeToken=0,controlsBeforeLandscape=false;
+let landscapeMode=false,landscapeToken=0,controlsBeforeLandscape=false;
 function updateLandscape(){if(!landscapeMode)return;releaseAll();document.body.classList.toggle('landscape-rotated',innerHeight>innerWidth);}
-async function leaveLandscape(){++landscapeToken;landscapeMode=false;releaseAll();document.body.classList.remove('landscape-mode','landscape-rotated');if(landscapeLocked&&screen.orientation&&screen.orientation.unlock){screen.orientation.unlock();}landscapeLocked=false;const exit=landscapeOwnFullscreen;landscapeOwnFullscreen=false;showController(controlsBeforeLandscape);if(exit&&document.fullscreenElement)try{await document.exitFullscreen();}catch(_){}canvas.focus({preventScroll:true});}
-async function enterLandscape(){if(landscapeMode)return;const token=++landscapeToken;controlsBeforeLandscape=!controller.hidden;landscapeMode=true;document.body.classList.add('landscape-mode');showController(true);updateLandscape();const area=document.getElementById('play-area');
- if(!document.fullscreenElement&&area.requestFullscreen)try{await area.requestFullscreen();if(token!==landscapeToken){if(document.fullscreenElement===area)await document.exitFullscreen();return;}landscapeOwnFullscreen=true;}catch(_){}
+function leaveLandscape(){++landscapeToken;landscapeMode=false;releaseAll();document.body.classList.remove('landscape-mode','landscape-rotated');showController(controlsBeforeLandscape);canvas.focus({preventScroll:true});}
+async function enterLandscape(){if(landscapeMode)return;const token=++landscapeToken;
+ // Fullscreen elements ignore CSS transforms. Leave it before rotating the page.
+ if(document.fullscreenElement){try{await document.exitFullscreen();}catch(_){return;}}
  if(token!==landscapeToken)return;
- if(document.fullscreenElement&&screen.orientation&&screen.orientation.lock)try{await screen.orientation.lock('landscape');if(token!==landscapeToken){screen.orientation.unlock();return;}landscapeLocked=true;}catch(_){}
- if(!landscapeLocked&&innerHeight>innerWidth&&document.fullscreenElement===area){landscapeOwnFullscreen=false;try{await document.exitFullscreen();}catch(_){}}
- updateLandscape();canvas.focus({preventScroll:true});
+ controlsBeforeLandscape=!controller.hidden;landscapeMode=true;document.body.classList.add('landscape-mode');showController(true);updateLandscape();canvas.focus({preventScroll:true});
 }
 document.getElementById('landscape').onclick=enterLandscape;document.getElementById('exit-landscape').onclick=leaveLandscape;
 addEventListener('resize',updateLandscape);addEventListener('orientationchange',updateLandscape);
-document.addEventListener('fullscreenchange',()=>{if(landscapeMode&&landscapeOwnFullscreen&&!document.fullscreenElement)leaveLandscape();});
 for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(['F2','F3','F4','F5','F6','F7','PageUp','PageDown','e','E','m','M','[',']'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();}},{capture:true});
 addEventListener('keydown',event=>{NightMusic.unlock();if(started&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','F1','F7'].includes(event.key)&&event.target.tagName!=='INPUT')event.preventDefault();});
 addEventListener('pointerdown',()=>NightMusic.unlock());
@@ -105,7 +104,7 @@ function setKeys(id,next){const previous=pointers.get(id)||new Set();
  for(const arrow of document.querySelectorAll('[data-direction]'))arrow.classList.toggle('pressed',owners.has(arrow.dataset.direction));
 }
 const pad=document.getElementById('dpad'),knob=document.getElementById('knob'),stickBase=document.getElementById('stick-base');let padPointer=null,padOrigin=null;
-function resetPad(){padPointer=null;padOrigin=null;stickBase.style.left='50%';stickBase.style.top='50%';knob.style.transform='translate(-50%,-50%)';}
+function resetPad(){padPointer=null;padOrigin=null;pad.classList.remove('active');knob.style.transform='translate(-50%,-50%)';}
 function release(id){setKeys(id,new Set());if(id===padPointer)resetPad();if(!pointers.size&&padPointer===null)controllerScrollAnchor=null;}
 function releaseAll(){for(const id of Array.from(pointers.keys()))release(id);resetPad();controllerScrollAnchor=null;}
 function padPoint(e){const r=pad.getBoundingClientRect();let x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;if(document.body.classList.contains('landscape-rotated'))[x,y]=[y,1-x];return {x:x*pad.clientWidth,y:y*pad.clientHeight};}
@@ -113,9 +112,13 @@ function padKeys(e){if(!padOrigin)return;const point=padPoint(e),radius=Math.min
  if(Math.hypot(dx,dy)>.24){if(Math.abs(dx)>.35*Math.abs(dy))keys.add(dx<0?'ArrowLeft':'ArrowRight');if(Math.abs(dy)>.35*Math.abs(dx))keys.add(dy<0?'ArrowUp':'ArrowDown');}
  setKeys(e.pointerId,keys);const scale=Math.max(1,Math.hypot(dx,dy));knob.style.transform='translate(calc(-50% + '+dx/scale*25+'px),calc(-50% + '+dy/scale*25+'px))';
 }
-pad.onpointerdown=e=>{if(!controlsReady||padPointer!==null)return;e.preventDefault();padPointer=e.pointerId;padOrigin=padPoint(e);stickBase.style.left=padOrigin.x+'px';stickBase.style.top=padOrigin.y+'px';pad.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});padKeys(e);};
-pad.onpointermove=e=>{if(e.pointerId===padPointer){e.preventDefault();padKeys(e);}};
-for(const type of ['pointerup','pointercancel','lostpointercapture'])pad.addEventListener(type,e=>release(e.pointerId));
+const stickArea=document.getElementById('play-area');
+stickArea.addEventListener('pointerdown',e=>{if(!controlsReady||controller.hidden||padPointer!==null||e.target.closest('button,#gate'))return;
+ const r=stickArea.getBoundingClientRect();const horizontal=document.body.classList.contains('landscape-rotated')?(e.clientY-r.top)/r.height:(e.clientX-r.left)/r.width;if(horizontal>.5)return;
+ e.preventDefault();e.stopPropagation();padPointer=e.pointerId;padOrigin=padPoint(e);stickBase.style.left=padOrigin.x+'px';stickBase.style.top=padOrigin.y+'px';pad.classList.add('active');stickArea.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});padKeys(e);
+},{capture:true});
+stickArea.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preventDefault();e.stopPropagation();padKeys(e);}},{capture:true});
+for(const type of ['pointerup','pointercancel','lostpointercapture'])stickArea.addEventListener(type,e=>{if(e.pointerId===padPointer){e.preventDefault();e.stopPropagation();release(e.pointerId);}},{capture:true});
 for(const button of document.querySelectorAll('[data-key]')){
  button.onpointerdown=e=>{if(!controlsReady)return;e.preventDefault();button.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});setKeys(e.pointerId,new Set([button.dataset.key]));};
  for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,e=>release(e.pointerId));
