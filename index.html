@@ -19,9 +19,10 @@ body.landscape-mode #play-area #actions button{height:calc((var(--side) - 8px)/2
 body.landscape-mode #play-area #utility{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;pointer-events:none}
 body.landscape-mode #play-area #utility button{min-width:70px;max-width:var(--side);min-height:42px;pointer-events:auto;font-size:12px}
 body.landscape-mode #play-area .fullscreen-exit{display:none}body.landscape-mode #play-area #exit-landscape{display:block;position:absolute;z-index:5;top:5px;left:50%;transform:translateX(-50%);padding:6px 10px;font-size:11px;background:#182435dd}
+#landscape-fullscreen{display:none}body.landscape-mode #landscape-fullscreen{display:block;position:absolute;z-index:7;top:5px;left:50%;transform:translateX(calc(-100% - 5px));padding:6px 10px;font-size:11px;background:#182435dd}body.landscape-mode #play-area #exit-landscape{transform:translateX(5px)}html:fullscreen{background:#10151e}
 #play-area.has-controls{touch-action:none}#play-area #controller #dpad{pointer-events:none}#stick-base{display:none;z-index:6}#dpad.active #stick-base{display:block}
 </style></head><body><main><header><h1>NIGHT <small>WEB</small></h1><div class="toolbar"><button id="toggle-controls" aria-pressed="false">화면 버튼</button><button id="landscape" class="mobile-landscape">가로 모드</button><button id="sound">소리</button><button id="fullscreen">전체 화면</button><button id="restart">재시작</button></div></header>
-<section id="play-area" aria-label="게임"><button id="exit-landscape">가로 모드 종료</button><button class="fullscreen-exit" id="exit-fullscreen">화면 축소</button><div class="screen" id="screen"><canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas><div id="gate"><strong>NIGHT</strong><small>처음에 약 51MB를 불러옵니다. 음악은 필요한 곡만 받습니다.</small><div class="controls"><button id="start">게임 시작</button><button id="select">스테이지 선택</button></div></div></div>
+<section id="play-area" aria-label="게임"><button id="landscape-fullscreen" aria-pressed="false">&#51204;&#52404; &#54868;&#47732;</button><button id="exit-landscape">가로 모드 종료</button><button class="fullscreen-exit" id="exit-fullscreen">화면 축소</button><div class="screen" id="screen"><canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas><div id="gate"><strong>NIGHT</strong><small>처음에 약 51MB를 불러옵니다. 음악은 필요한 곡만 받습니다.</small><div class="controls"><button id="start">게임 시작</button><button id="select">스테이지 선택</button></div></div></div>
 <div id="controller" class="disabled" aria-label="가상 컨트롤러"><div id="utility"><button data-key="Enter">확인 <small>Enter</small></button><button data-key="Escape">일시정지 / 뒤로</button></div><div id="dpad" role="group" aria-label="방향 패드: 드래그하여 8방향 이동"><div id="stick-base"><span class="north" data-direction="ArrowUp">&#8593;</span><span class="west" data-direction="ArrowLeft">&#8592;</span><span class="east" data-direction="ArrowRight">&#8594;</span><span class="south" data-direction="ArrowDown">&#8595;</span><div id="knob"></div></div></div><div id="actions"><button id="punch" data-key="z">펀치<small>Z</small></button><button id="kick" data-key="x">킥<small>X</small></button><button data-key="f">점프<small>F</small></button><button data-key=" ">가드<small>Space</small></button></div></div></section>
 <progress id="progress" max="1" value="0"></progress><p id="status" role="status">Ready</p><p id="audio-status" role="status"></p>
 <p class="help"><kbd>방향키</kbd> 이동 &nbsp; <kbd>Z</kbd> 펀치 &nbsp; <kbd>X</kbd> 킥 &nbsp; <kbd>F</kbd> 점프 &nbsp; <kbd>Space</kbd> 가드 &nbsp; <kbd>Enter</kbd> 확인 &nbsp; <kbd>Esc</kbd> 일시정지 / 뒤로<br>화면 왼쪽에서 터치하면 그곳에 조이스틱이 나타납니다. 드래그하여 이동하고 손을 떼면 사라집니다. 공격 버튼과 동시에 누를 수 있습니다.</p><footer>NIGHT WEB</footer>
@@ -78,7 +79,16 @@ document.getElementById('start').onclick=()=>start(false);document.getElementByI
 document.getElementById('sound').onclick=()=>{NightMusic.unlock();canvas.focus({preventScroll:true});};
 document.getElementById('exit-fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();};
 document.getElementById('restart').onclick=()=>{location.href=location.pathname+(stageMode?'?mode=select':'');};
-document.getElementById('fullscreen').onclick=()=>{const area=document.getElementById('play-area');if(document.fullscreenElement)document.exitFullscreen();else if(area.requestFullscreen)area.requestFullscreen().catch(()=>{});canvas.focus({preventScroll:true});};
+async function toggleFullscreen(){
+ // Fullscreen the root so the rotated play-area remains a transformable child.
+ const target=landscapeMode?document.documentElement:document.getElementById('play-area');
+ try{if(document.fullscreenElement)await document.exitFullscreen();else if(target.requestFullscreen)await target.requestFullscreen();else throw new Error('unsupported');}
+ catch(_){if(landscapeMode)document.getElementById('landscape-fullscreen').textContent='전체화면 사용 불가';}
+ if(landscapeMode)updateLandscape();canvas.focus({preventScroll:true});
+}
+document.getElementById('fullscreen').onclick=toggleFullscreen;
+document.getElementById('landscape-fullscreen').onclick=toggleFullscreen;
+document.addEventListener('fullscreenchange',()=>{const button=document.getElementById('landscape-fullscreen');button.textContent=document.fullscreenElement?'화면 축소':'전체 화면';button.setAttribute('aria-pressed',String(!!document.fullscreenElement));if(landscapeMode)updateLandscape();});
 let landscapeMode=false,landscapeToken=0,controlsBeforeLandscape=false;
 function updateLandscape(){if(!landscapeMode)return;releaseAll();document.body.classList.toggle('landscape-rotated',innerHeight>innerWidth);}
 function leaveLandscape(){++landscapeToken;landscapeMode=false;releaseAll();document.body.classList.remove('landscape-mode','landscape-rotated');showController(controlsBeforeLandscape);canvas.focus({preventScroll:true});}
