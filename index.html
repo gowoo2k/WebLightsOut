@@ -32,7 +32,7 @@ html:fullscreen body.landscape-mode #play-area{padding:0}html:fullscreen body.la
 const canvas=document.getElementById('canvas'),statusEl=document.getElementById('status'),audioStatus=document.getElementById('audio-status');
 const params=new URLSearchParams(location.search);
 const MUSIC_VERSION='92d3615d214a';
-const GAME_VERSION='ebc7dedf7366';
+const GAME_VERSION='97b557d597d1';
 const GAME_STEM='game-smooth';
 let stageMode=params.get('mode')==='select',started=false;
 globalThis.NightMusic={track:0,audio:new Audio(),blocked:false,
@@ -77,6 +77,24 @@ async function start(select){if(started)return;started=true;stageMode=select;Mod
  const script=document.createElement('script');script.src=GAME_STEM+'.js?v='+GAME_VERSION;script.onerror=()=>{statusEl.textContent='Could not load '+script.src+'. Upload the complete contents of NightPort-Web.zip, then refresh.';};document.body.appendChild(script);
  }catch(error){started=false;document.getElementById('gate').hidden=false;statusEl.textContent='Game download failed: '+error.message;}
 }
+const cheatButton=document.createElement('button');
+cheatButton.id='cheat';cheatButton.textContent='치트 +10,000';
+cheatButton.title='경험치 10,000 지급 · 게임 실행마다 1회 사용 가능';
+document.getElementById('fullscreen').after(cheatButton);
+document.querySelector('.toolbar').style.flexWrap='wrap';
+let cheatUsed=false;
+function updateCheatButton(){
+ cheatButton.disabled=cheatUsed;cheatButton.textContent=cheatUsed?'치트 사용 완료':'치트 +10,000';
+}
+updateCheatButton();
+cheatButton.onclick=()=>{
+ updateCheatButton();if(cheatButton.disabled)return;
+ if(typeof Module._night_grant_experience!=='function'){statusEl.textContent='게임 시작 후 치트를 사용할 수 있습니다.';return;}
+ const result=Module._night_grant_experience();
+ if(!result)statusEl.textContent='전투 화면에서 치트를 사용해 주세요.';
+ else{cheatUsed=true;statusEl.textContent=result===1?'경험치 10,000을 받았습니다. (1회 사용 완료)':'이미 치트를 사용했습니다.';}
+ updateCheatButton();canvas.focus({preventScroll:true});
+};
 document.getElementById('start').onclick=()=>start(false);document.getElementById('select').onclick=()=>start(true);
 document.getElementById('sound').onclick=()=>{NightMusic.unlock();canvas.focus({preventScroll:true});};
 document.getElementById('exit-fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();};
