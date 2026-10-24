@@ -22,16 +22,17 @@ body.landscape-mode #play-area .fullscreen-exit{display:none}body.landscape-mode
 #landscape-fullscreen{display:none}body.landscape-mode #landscape-fullscreen{display:block;position:absolute;z-index:7;top:5px;left:50%;transform:translateX(calc(-100% - 5px));padding:6px 10px;font-size:11px;background:#182435dd}body.landscape-mode #play-area #exit-landscape{transform:translateX(5px)}html:fullscreen{background:#10151e}
 html:fullscreen body.landscape-mode #play-area{padding:0}html:fullscreen body.landscape-mode #play-area .screen{border:0;border-radius:0}
 #play-area.has-controls{touch-action:none}#play-area #controller #dpad{pointer-events:none}#stick-base{display:none;z-index:6}#dpad.active #stick-base{display:block}
+#actions #dash{background:#615536}#actions #grab{background:#574674}
 </style></head><body><main><header><h1>NIGHT <small>WEB</small></h1><div class="toolbar"><button id="toggle-controls" aria-pressed="false">화면 버튼</button><button id="landscape" class="mobile-landscape">가로 모드</button><button id="sound">소리</button><button id="fullscreen">전체 화면</button><button id="restart">재시작</button></div></header>
 <section id="play-area" aria-label="게임"><button id="landscape-fullscreen" aria-pressed="false">&#51204;&#52404; &#54868;&#47732;</button><button id="exit-landscape">가로 모드 종료</button><button class="fullscreen-exit" id="exit-fullscreen">화면 축소</button><div class="screen" id="screen"><canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas><div id="gate"><strong>NIGHT</strong><small>처음에 약 51MB를 불러옵니다. 음악은 필요한 곡만 받습니다.</small><div class="controls"><button id="start">게임 시작</button><button id="select">스테이지 선택</button></div></div></div>
-<div id="controller" class="disabled" aria-label="가상 컨트롤러"><div id="utility"><button data-key="Enter">확인 <small>Enter</small></button><button data-key="Escape">일시정지 / 뒤로</button></div><div id="dpad" role="group" aria-label="방향 패드: 드래그하여 8방향 이동"><div id="stick-base"><span class="north" data-direction="ArrowUp">&#8593;</span><span class="west" data-direction="ArrowLeft">&#8592;</span><span class="east" data-direction="ArrowRight">&#8594;</span><span class="south" data-direction="ArrowDown">&#8595;</span><div id="knob"></div></div></div><div id="actions"><button id="punch" data-key="z">펀치<small>Z</small></button><button id="kick" data-key="x">킥<small>X</small></button><button data-key="f">점프<small>F</small></button><button data-key=" ">가드<small>Space</small></button></div></div></section>
+<div id="controller" class="disabled" aria-label="가상 컨트롤러"><div id="utility"><button data-key="Enter">확인 <small>Enter</small></button><button data-key="Escape">일시정지 / 뒤로</button></div><div id="dpad" role="group" aria-label="방향 패드: 드래그하여 8방향 이동"><div id="stick-base"><span class="north" data-direction="ArrowUp">&#8593;</span><span class="west" data-direction="ArrowLeft">&#8592;</span><span class="east" data-direction="ArrowRight">&#8594;</span><span class="south" data-direction="ArrowDown">&#8595;</span><div id="knob"></div></div></div><div id="actions"><button id="dash" data-action="dash">대시<small>이동 방향</small></button><button id="grab" data-keys="z x">잡기<small>펀치 + 킥</small></button><button id="punch" data-key="z">펀치<small>Z</small></button><button id="kick" data-key="x">킥<small>X</small></button><button data-key="f">점프<small>F</small></button><button data-key=" ">가드<small>Space</small></button></div></div></section>
 <progress id="progress" max="1" value="0"></progress><p id="status" role="status">Ready</p><p id="audio-status" role="status"></p>
-<p class="help"><kbd>방향키</kbd> 이동 &nbsp; <kbd>Z</kbd> 펀치 &nbsp; <kbd>X</kbd> 킥 &nbsp; <kbd>F</kbd> 점프 &nbsp; <kbd>Space</kbd> 가드 &nbsp; <kbd>Enter</kbd> 확인 &nbsp; <kbd>Esc</kbd> 일시정지 / 뒤로<br>화면 왼쪽에서 터치하면 그곳에 조이스틱이 나타납니다. 드래그하여 이동하고 손을 떼면 사라집니다. 공격 버튼과 동시에 누를 수 있습니다.</p><footer>NIGHT WEB</footer>
+<p class="help"><kbd>방향키</kbd> 이동 &nbsp; <kbd>Z</kbd> 펀치 &nbsp; <kbd>X</kbd> 킥 &nbsp; <kbd>F</kbd> 점프 &nbsp; <kbd>Space</kbd> 가드 &nbsp; <kbd>Enter</kbd> 확인 &nbsp; <kbd>Esc</kbd> 일시정지 / 뒤로<br>화면 왼쪽에서 터치하면 그곳에 조이스틱이 나타납니다. 드래그하여 이동하고 손을 떼면 사라집니다. 공격 버튼과 동시에 누를 수 있습니다. 대시는 마지막 좌우 이동 방향으로 발동하며 누르고 있으면 달립니다. 잡기는 적 가까이에서 누르세요. 대시·잡기는 성장 1단계부터 사용할 수 있습니다.</p><footer>NIGHT WEB</footer>
 <script>
 const canvas=document.getElementById('canvas'),statusEl=document.getElementById('status'),audioStatus=document.getElementById('audio-status');
 const params=new URLSearchParams(location.search);
 const MUSIC_VERSION='92d3615d214a';
-const GAME_VERSION='843515053159';
+const GAME_VERSION='ebc7dedf7366';
 const GAME_STEM='game-smooth';
 let stageMode=params.get('mode')==='select',started=false;
 globalThis.NightMusic={track:0,audio:new Audio(),blocked:false,
@@ -106,18 +107,41 @@ addEventListener('keydown',event=>{NightMusic.unlock();if(started&&['ArrowLeft',
 addEventListener('pointerdown',()=>NightMusic.unlock());
 const codes={ArrowLeft:37,ArrowUp:38,ArrowDown:40,ArrowRight:39,x:88,z:90,f:70,' ':32,Enter:13,Escape:27};
 const pointers=new Map(),owners=new Map();let controllerScrollAnchor=null;
-function sendKey(key,down){canvas.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{key,code:key===' '?'Space':key.length===1?'Key'+key.toUpperCase():key,keyCode:codes[key],which:codes[key],bubbles:true,cancelable:true}));}
+function dispatchKey(key,down){canvas.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{key,code:key===' '?'Space':key.length===1?'Key'+key.toUpperCase():key,keyCode:codes[key],which:codes[key],bubbles:true,cancelable:true}));}
+// Keep joystick ownership intact while the dash macro pulses horizontal input.
+const normalKeys=new Set(),emittedKeys=new Set();
+let dashDirection='ArrowRight',dashRun=null;
+function syncKeys(){
+ const desired=new Set(normalKeys);
+ if(dashRun){desired.delete('ArrowLeft');desired.delete('ArrowRight');if(dashRun.down)desired.add(dashRun.direction);}
+ for(const key of Array.from(emittedKeys))if(!desired.has(key)){dispatchKey(key,false);emittedKeys.delete(key);}
+ for(const key of desired)if(!emittedKeys.has(key)){dispatchKey(key,true);emittedKeys.add(key);}
+}
+function sendKey(key,down){if(down){normalKeys.add(key);if(key==='ArrowLeft'||key==='ArrowRight')dashDirection=key;}else normalKeys.delete(key);syncKeys();}
+function stopDash(){if(!dashRun)return;clearTimeout(dashRun.timer);dashRun=null;document.getElementById('dash').classList.remove('pressed');syncKeys();}
+function startDash(id){
+ if(dashRun)return;
+ const run=dashRun={id,direction:dashDirection,down:false,phase:0,released:false,timer:null};
+ document.getElementById('dash').classList.add('pressed');syncKeys();
+ // Four presses allow the first to turn around; the next three match fff.
+ function step(){if(dashRun!==run)return;
+  run.down=!run.down;syncKeys();
+  if(run.down&&++run.phase===4){if(run.released)run.timer=setTimeout(stopDash,96);return;}
+  run.timer=setTimeout(step,run.down?96:32);
+ }
+ run.timer=setTimeout(step,32);
+}
 function setKeys(id,next){const previous=pointers.get(id)||new Set();
  for(const k of previous)if(!next.has(k)){const refs=owners.get(k);if(refs){refs.delete(id);if(!refs.size){owners.delete(k);sendKey(k,false);}}}
  for(const k of next)if(!previous.has(k)){if(!owners.has(k)){owners.set(k,new Set());sendKey(k,true);}owners.get(k).add(id);}
  if(next.size)pointers.set(id,next);else pointers.delete(id);
- for(const button of document.querySelectorAll('[data-key]'))button.classList.toggle('pressed',owners.has(button.dataset.key));
+ for(const button of document.querySelectorAll('[data-key],[data-keys]'))button.classList.toggle('pressed',(button.dataset.keys?button.dataset.keys.split(' '):[button.dataset.key]).every(k=>owners.has(k)));
  for(const arrow of document.querySelectorAll('[data-direction]'))arrow.classList.toggle('pressed',owners.has(arrow.dataset.direction));
 }
 const pad=document.getElementById('dpad'),knob=document.getElementById('knob'),stickBase=document.getElementById('stick-base');let padPointer=null,padOrigin=null;
 function resetPad(){padPointer=null;padOrigin=null;pad.classList.remove('active');knob.style.transform='translate(-50%,-50%)';}
-function release(id){setKeys(id,new Set());if(id===padPointer)resetPad();if(!pointers.size&&padPointer===null)controllerScrollAnchor=null;}
-function releaseAll(){for(const id of Array.from(pointers.keys()))release(id);resetPad();controllerScrollAnchor=null;}
+function release(id){if(dashRun&&dashRun.id===id){dashRun.released=true;if(dashRun.phase===4)stopDash();}setKeys(id,new Set());if(id===padPointer)resetPad();if(!pointers.size&&padPointer===null)controllerScrollAnchor=null;}
+function releaseAll(){stopDash();for(const id of Array.from(pointers.keys()))release(id);resetPad();controllerScrollAnchor=null;}
 function padPoint(e){const r=pad.getBoundingClientRect();let x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;if(document.body.classList.contains('landscape-rotated'))[x,y]=[y,1-x];return {x:x*pad.clientWidth,y:y*pad.clientHeight};}
 function padKeys(e){if(!padOrigin)return;const point=padPoint(e),radius=Math.min(pad.clientWidth,pad.clientHeight)/2,dx=(point.x-padOrigin.x)/radius,dy=(point.y-padOrigin.y)/radius;const keys=new Set();
  if(Math.hypot(dx,dy)>.24){if(Math.abs(dx)>.35*Math.abs(dy))keys.add(dx<0?'ArrowLeft':'ArrowRight');if(Math.abs(dy)>.35*Math.abs(dx))keys.add(dy<0?'ArrowUp':'ArrowDown');}
@@ -130,10 +154,14 @@ stickArea.addEventListener('pointerdown',e=>{if(!controlsReady||controller.hidde
 },{capture:true});
 stickArea.addEventListener('pointermove',e=>{if(e.pointerId===padPointer){e.preventDefault();e.stopPropagation();padKeys(e);}},{capture:true});
 for(const type of ['pointerup','pointercancel','lostpointercapture'])stickArea.addEventListener(type,e=>{if(e.pointerId===padPointer){e.preventDefault();e.stopPropagation();release(e.pointerId);}},{capture:true});
-for(const button of document.querySelectorAll('[data-key]')){
- button.onpointerdown=e=>{if(!controlsReady)return;e.preventDefault();button.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});setKeys(e.pointerId,new Set([button.dataset.key]));};
+for(const button of document.querySelectorAll('[data-key],[data-keys]')){
+ button.onpointerdown=e=>{if(!controlsReady)return;e.preventDefault();button.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});setKeys(e.pointerId,new Set(button.dataset.keys?button.dataset.keys.split(' '):[button.dataset.key]));};
  for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,e=>release(e.pointerId));
 }
+const dashButton=document.getElementById('dash');
+dashButton.onpointerdown=e=>{if(!controlsReady)return;e.preventDefault();dashButton.setPointerCapture(e.pointerId);canvas.focus({preventScroll:true});startDash(e.pointerId);};
+dashButton.addEventListener('pointerup',e=>release(e.pointerId));
+for(const type of ['pointercancel','lostpointercapture'])dashButton.addEventListener(type,e=>{if(dashRun&&dashRun.id===e.pointerId&&!dashRun.released)stopDash();});
 let controlsReady=false;
 function controllerReady(ready){controlsReady=ready;if(!ready)releaseAll();document.getElementById('controller').classList.toggle('disabled',!ready);}
 const toggle=document.getElementById('toggle-controls'),controller=document.getElementById('controller');
